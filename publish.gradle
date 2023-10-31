@@ -1,0 +1,14 @@
+ext {
+    PUBLISH_DESCRIPTION = 'Android library for App Usage Statistics.'
+    PUBLISH_URL = 'https://github.com/miraenec/NWAppLogger_Kotlin'
+    PUBLISH_LICENSE_NAME = 'GPL-3.0'
+    PUBLISH_LICENSE_URL = 'https://github.com/miraenec/NWAppLogger_Kotlin/blob/main/LICENSE'
+
+    PUBLISH_DEVELOPER_ID = 'miraenec'
+    PUBLISH_DEVELOPER_NAME = 'morris'
+    PUBLISH_DEVELOPER_EMAIL = 'holymoai@gmail.com'
+
+    PUBLISH_SCM_CONNECTION = 'scm:git:github.com:miraenec/NWAppLogger_Kotlin.git'
+    PUBLISH_SCM_DEVELOPER_CONNECTION = 'scm:git:ssh://github.com:miraenec/NWAppLogger_Kotlin.git'
+    PUBLISH_SCM_URL = 'https://github.com/miraenec/NWAppLogger_Kotlin/tree/main'
+}
