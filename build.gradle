@@ -1,7 +1,8 @@
 apply plugin: 'com.android.library'
 apply plugin: 'org.jetbrains.kotlin.android'
-
-project.group = GROUP
+apply plugin: 'kotlin-android'
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
 
 buildscript {
     ext {
@@ -9,74 +10,156 @@ buildscript {
     }
 
     repositories {
+        mavenCentral()
         google()
-        jcenter()
-        maven { url "https://maven.google.com" }
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:7.3.0'
-        classpath "com.github.dcendents:android-maven-gradle-plugin:${ANDROID_MAVEN_GRADLE_PLUGIN_VERSION}"
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        jcenter()
         maven { url "https://jitpack.io" }
         maven { url "https://maven.google.com" }
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.2'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 android {
     compileSdk 33
+
     defaultConfig {
+        minSdk 21
+        targetSdk 33
         versionCode 1
-        versionName "${LIBRARY_VERSION}"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        minSdkVersion 21
+        versionName "3.1.0"
     }
 
+    namespace "com.nextweb.nwapplogger"
+
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility "17"
+        targetCompatibility "17"
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
-    packagingOptions {
-        resources {
-            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
         }
     }
-    namespace 'com.nextweb.nwapplogger'
+
+    buildTypes {
+        release {
+            minifyEnabled true // Enables code shrinking for the release build type.
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
 
     sourceSets {
         main {
             manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = ['src/main/java']
+            kotlin.srcDirs = ['src/main/kotlin']
         }
     }
 }
 
-tasks.withType(Sign) {
-    notCompatibleWithConfigurationCache("https://github.com/gradle/gradle/issues/13470")
+// Local.properties에 기입한 인증 정보를 받아오기 위한 extra변수 선언
+ext["signing.key"] = ''
+ext["signing.keyId"] = ''
+ext["signing.password"] = ''
+ext["sonatypeStagingProfileId"] = ''
+ext["ossrhUsername"] = ''
+ext["ossrhPassword"] = ''
+
+// 메이븐 배포 작업 지시사항
+afterEvaluate {
+
+    // Local.properties 파일에 기입한 인증 정보를 가져와서 extra변수에 넣기
+    File secretPropsFile = project.rootProject.file("local.properties")
+    if (secretPropsFile.exists()){
+        Properties p = new Properties()
+        new FileInputStream(secretPropsFile).withCloseable { fis -> p.load(fis)}
+        p.each { key, value -> ext[key.toString()] = value }
+    } else {
+        ext["ossrhUsername"] = System.getenv('OSSRH_USERNAME')
+        ext["ossrhPassword"] = System.getenv('OSSRH_PASSWORD')
+        ext["sonatypeStagingProfileId"] = System.getenv('SONATYPE_STAGING_PROFILE_ID')
+        ext["signing.keyId"] = System.getenv('SIGNING_KEY_ID')
+        ext["signing.password"] = System.getenv('SIGNING_PASSWORD')
+        ext["signing.secretKeyRingFile"] = System.getenv('SIGNING_SECRET_KYE_RING_FILE')
+    }
+
+    // 배포하기
+    publishing {
+        // 배포할 레포지토리 지정
+        repositories {
+            mavenCentral()
+            maven {
+                name 'sonatype'
+                url 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+
+                // 인증 정보 기입 (nexus manager 계정)
+                credentials {
+                    username ossrhUsername
+                    password ossrhPassword
+                }
+            }
+        }
+
+        // 배포할 아티팩트의 정보
+        publications {
+            release(MavenPublication){
+                if (project.plugins.findPlugin("com.android.library")) {
+                    from components.release
+                } else {
+                    from components.java
+                }
+
+                groupId 'io.github.miraenec'
+                artifactId 'nwapplogger-kotlin'
+                version '1.0.0'
+
+                // 상세정보
+                pom {
+                    name = 'NWAppLogger'
+                    description = 'SDK for App Usage Statistics'
+                    url ='git@github.com:miraenec/NWAppLogger_Kotlin.git'
+                    licenses {
+                        license {
+                            name = 'GPL-3.0'
+                            url = 'https://opensource.org/license/gpl-3-0/'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'miraenec'
+                            name = 'morris'
+                            email = 'holymoai@gmail.com'
+                            url = 'https://github.com/miraenec'
+                        }
+                    }
+                    scm {
+                        connection = 'git@github.com:miraenec/NWAppLogger_Kotlin.git'
+                        developerConnection = 'git@github.com:miraenec/NWAppLogger_Kotlin.git'
+                        url = 'https://github.com/miraenec/NWAppLogger_Kotlin.git'
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 서명 작업 지시사항
+signing {
+    sign publishing.publications
 }
 
 dependencies {
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.2'
     implementation 'com.google.android.gms:play-services-ads-identifier:18.0.1'
-    repositories {
-        google()
-        jcenter()
-        maven { url 'https://maven.google.com/' }
-        maven { url "https://jitpack.io" }
-    }
     implementation 'com.android.installreferrer:installreferrer:2.2'
-    implementation 'com.google.code.gson:gson:2.8.2'
     implementation 'com.google.code.gson:gson:2.8.2'
     implementation 'com.android.volley:volley:1.2.0'
     implementation 'com.squareup.okhttp3:okhttp:3.9.1'
