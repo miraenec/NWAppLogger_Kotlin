@@ -37,8 +37,7 @@ class MainActivity : ComponentActivity(), NWAppLogger.OnGoogleReferrerDataCallba
         /* NWAppLogger 설정 start*/
         val nwappLogger = NWAppLogger.instance
         // 최초 앱 실행시 한번 호출
-        nwappLogger.init(this, true, "https://log.vitality.aia.co.kr/depapi/AppLogRequest");
-//        nwappLogger.init(this, true, "https://log.dev.vitality.aia.co.kr/depapi/AppLogRequest")
+        nwappLogger.init(this, true, "url");
 
         // 파리미터 정보 set
         nwappLogger.setParameters(
